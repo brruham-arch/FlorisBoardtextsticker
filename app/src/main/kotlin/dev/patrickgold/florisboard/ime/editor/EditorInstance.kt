@@ -19,6 +19,8 @@ package dev.patrickgold.florisboard.ime.editor
 import android.content.ClipDescription
 import android.content.ContentUris
 import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import android.view.KeyEvent
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.view.inputmethod.InputContentInfoCompat
@@ -30,6 +32,7 @@ import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardFileStorage
 import dev.patrickgold.florisboard.ime.clipboard.provider.ClipboardItem
 import dev.patrickgold.florisboard.ime.clipboard.provider.ItemType
+import dev.patrickgold.florisboard.ime.media.sticker.StickerFileStorage
 import dev.patrickgold.florisboard.ime.input.InputShiftState
 import dev.patrickgold.florisboard.ime.keyboard.IncognitoMode
 import dev.patrickgold.florisboard.ime.keyboard.KeyboardMode
@@ -331,6 +334,29 @@ class EditorInstance(context: Context) : AbstractEditorInstance(context) {
                 keyboardManager.activeState.imeUiMode = ImeUiMode.TEXT
             }
         }
+    }
+
+    /**
+     * Commits a generated text-sticker bitmap as rich content, mirroring
+     * [commitClipboardItem]'s image branch but backed by [StickerFileStorage]
+     * instead of the clipboard database.
+     *
+     * @param bitmap The sticker bitmap to commit.
+     *
+     * @return True on success, false if something went wrong.
+     */
+    fun commitStickerItem(bitmap: Bitmap?): Boolean {
+        if (bitmap == null) return false
+        val uri: Uri = StickerFileStorage.saveStickerAndGetUri(appContext, bitmap)
+        val inputContentInfo = InputContentInfoCompat(
+            uri,
+            ClipDescription("text sticker", arrayOf("image/png")),
+            null,
+        )
+        val ic = currentInputConnection() ?: return false
+        ic.finishComposingText()
+        val flags = InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION
+        return InputConnectionCompat.commitContent(ic, activeInfo.base, inputContentInfo, flags, null)
     }
 
     /**

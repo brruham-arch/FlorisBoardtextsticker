@@ -20,6 +20,7 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -50,6 +51,8 @@ import dev.patrickgold.florisboard.ime.keyboard.FlorisImeSizing
 import dev.patrickgold.florisboard.ime.keyboard.KeyData
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiData
 import dev.patrickgold.florisboard.ime.media.emoji.EmojiPaletteView
+import dev.patrickgold.florisboard.ime.media.sticker.StickerPaletteView
+import androidx.compose.runtime.mutableIntStateOf
 import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
@@ -71,16 +74,25 @@ fun MediaInputLayout(
         emojiLayoutDataMap = EmojiData.get(context, "ime/media/emoji/root.txt")
     }
 
+    // 0 = Emoji tab, 1 = Sticker tab
+    var activeMediaTab by remember { mutableIntStateOf(0) }
+
     SnyggColumn(
         elementName = FlorisImeUi.Media.elementName,
         modifier = modifier
             .fillMaxWidth()
             .height(FlorisImeSizing.imeUiHeight()),
     ) {
-        EmojiPaletteView(
-            modifier = Modifier.weight(1f),
-            fullEmojiMappings = emojiLayoutDataMap,
-        )
+        if (activeMediaTab == 0) {
+            EmojiPaletteView(
+                modifier = Modifier.weight(1f),
+                fullEmojiMappings = emojiLayoutDataMap,
+            )
+        } else {
+            StickerPaletteView(
+                modifier = Modifier.weight(1f),
+            )
+        }
         SnyggRow(
             elementName = FlorisImeUi.MediaBottomRow.elementName,
             modifier = Modifier
@@ -96,6 +108,19 @@ fun MediaInputLayout(
                 Text(
                     text = "ABC",
                     fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            KeyboardLikeButton(
+                elementName = FlorisImeUi.MediaBottomRowButton.elementName,
+                inputEventDispatcher = keyboardManager.inputEventDispatcher,
+                keyData = TextKeyData.UNSPECIFIED,
+                modifier = Modifier.fillMaxHeight(),
+            ) {
+                Text(
+                    text = if (activeMediaTab == 0) "Sticker" else "Emoji",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { activeMediaTab = if (activeMediaTab == 0) 1 else 0 },
                 )
             }
             Spacer(modifier = Modifier.weight(1f))
